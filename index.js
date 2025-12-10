@@ -389,7 +389,7 @@ const App = () => {
                 if (row) {
                     // 기계별/형상별 총계 계산 (accumulate)
                     const rowCarbonTotal = row.carbon_ingot_ic + row.carbon_ingot_vsd + row.carbon_ingot_cc + row.carbon_rb + row.carbon_slab;
-                    const rowAlloyTotal = row.alloy_ingot_ic + row.alloy_ingot_vsd + row.alloy_ingot_cc + row.alloy_rb + row.alloy_slab;
+                    const rowAlloyTotal = row.alloy_ingot_ic + row.alloy_ingot_vsd + row.alloy_ingot_cc + row.alloy_ingot_rb + row.alloy_slab;
                     const rowSusTotal = row.sus_ingot_ic + row.sus_rb + row.sus_slab;
                     const rowToolTotal = row.tool_ingot_ic + row.tool_slab;
 
