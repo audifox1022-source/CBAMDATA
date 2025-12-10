@@ -74,6 +74,9 @@ def clean_and_aggregate(df):
 
     # 데이터 집계 (반복문)
     pivot_keywords = ['총합계', '합계', '소계', '레이블', 'grand total', 'subtotal']
+    
+    # P15 총합계를 계산하기 위해 필요한 변수 초기화
+    p15_calculated_total = 0 
 
     for index, row in df.iterrows():
         try:
@@ -117,15 +120,22 @@ def clean_and_aggregate(df):
             category_key = f'{material_class}{source_suffix}'
 
             # 5. 매트릭스에 중량 누적
+            current_total = 0
             if category_key in matrix[machine][shape]:
                 matrix[machine][shape][category_key] += weight
-
+                current_total = weight
+            
+            # --- 수정된 파이썬 문법: 콜론과 들여쓰기 사용 ---
+            if machine == 'P15':
+                p15_calculated_total += current_total
+            # ----------------------------------------
+            
         except Exception as e:
             # 에러 발생 시 로그 기록 또는 무시
             # st.warning(f"데이터 처리 중 오류 발생: {e}") 
             continue
             
-    return matrix
+    return matrix, p15_calculated_total
 
 # --- 3. UI 및 데이터 입력 ---
 
@@ -178,7 +188,7 @@ if uploaded_file:
         if df is not None and not df.empty:
             
             # --- 집계 실행 ---
-            aggregated_data = clean_and_aggregate(df)
+            aggregated_data, p15_calculated_total = clean_and_aggregate(df)
             
             if aggregated_data:
                 st.success("🎉 데이터 분석 및 CBAM 형식 집계가 완료되었습니다!")
@@ -189,8 +199,9 @@ if uploaded_file:
                 machines = ['P15', 'P5', 'P8', 'RM']
                 target_shapes = ['RING', 'SHAFT', 'DISC', 'SHELL', 'SQUARE', '황지']
                 
+                # Grand Totals를 위한 딕셔너리
                 grand_totals = {key: 0 for key in ['C_IC', 'C_VSD', 'C_CC', 'C_RB', 'C_Slab', 'A_IC', 'A_VSD', 'A_CC', 'A_RB', 'A_Slab', 'S_IC', 'S_RB', 'S_Slab', 'T_IC', 'T_Slab']}
-                p15_calculated_total = 0
+                
                 
                 for machine in machines:
                     shapes_data = aggregated_data.get(machine, {})
@@ -198,7 +209,9 @@ if uploaded_file:
                     for index, shape in enumerate(target_shapes):
                         row = shapes_data.get(shape, {})
                         
-                        if not row: continue
+                        # 행의 모든 값이 0이면 건너뜁니다.
+                        if not any(row.values()):
+                            continue
 
                         # 데이터 추출 (키 순서 유지)
                         row_data = {
@@ -214,34 +227,31 @@ if uploaded_file:
                         final_data.append(row_data)
 
                         # 총합계 업데이트
-                        current_total = 0
-                        grand_totals['C_IC'] += row_data['탄소강(IC)']; current_total += row_data['탄소강(IC)']
-                        grand_totals['C_VSD'] += row_data['탄소강(VSD)']; current_total += row_data['탄소강(VSD)']
-                        grand_totals['C_CC'] += row_data['탄소강(CC)']; current_total += row_data['탄소강(CC)']
-                        grand_totals['C_RB'] += row_data['탄소강(R/B)']; current_total += row_data['탄소강(R/B)']
-                        grand_totals['C_Slab'] += row_data['탄소강(Slab)']; current_total += row_data['탄소강(Slab)']
+                        grand_totals['C_IC'] += row_data['탄소강(IC)']
+                        grand_totals['C_VSD'] += row_data['탄소강(VSD)']
+                        grand_totals['C_CC'] += row_data['탄소강(CC)']
+                        grand_totals['C_RB'] += row_data['탄소강(R/B)']
+                        grand_totals['C_Slab'] += row_data['탄소강(Slab)']
                         
-                        grand_totals['A_IC'] += row_data['합금강(IC)']; current_total += row_data['합금강(IC)']
-                        grand_totals['A_VSD'] += row_data['합금강(VSD)']; current_total += row_data['합금강(VSD)']
-                        grand_totals['A_CC'] += row_data['합금강(CC)']; current_total += row_data['합금강(CC)']
-                        grand_totals['A_RB'] += row_data['합금강(R/B)']; current_total += row_data['합금강(R/B)']
-                        grand_totals['A_Slab'] += row_data['합금강(Slab)']; current_total += row_data['합금강(Slab)']
+                        grand_totals['A_IC'] += row_data['합금강(IC)']
+                        grand_totals['A_VSD'] += row_data['합금강(VSD)']
+                        grand_totals['A_CC'] += row_data['합금강(CC)']
+                        grand_totals['A_RB'] += row_data['합금강(R/B)']
+                        grand_totals['A_Slab'] += row_data['합금강(Slab)']
 
-                        grand_totals['S_IC'] += row_data['SUS(IC)']; current_total += row_data['SUS(IC)']
-                        grand_totals['S_RB'] += row_data['SUS(R/B)']; current_total += row_data['SUS(R/B)']
-                        grand_totals['S_Slab'] += row_data['SUS(Slab)']; current_total += row_data['SUS(Slab)']
+                        grand_totals['S_IC'] += row_data['SUS(IC)']
+                        grand_totals['S_RB'] += row_data['SUS(R/B)']
+                        grand_totals['S_Slab'] += row_data['SUS(Slab)']
 
-                        grand_totals['T_IC'] += row_data['공구강(IC)']; current_total += row_data['공구강(IC)']
-                        grand_totals['T_Slab'] += row_data['공구강(Slab)']; current_total += row_data['공구강(Slab)']
+                        grand_totals['T_IC'] += row_data['공구강(IC)']
+                        grand_totals['T_Slab'] += row_data['공구강(Slab)']
 
-                        if (machine == 'P15') p15_calculated_total += current_total
                     
                     # 빈 행 추가 (가독성)
-                    if index == len(target_shapes) - 1:
-                        final_data.append({"설비": "", "제품형상": "", "구분": "", "탄소강(IC)": "", "탄소강(VSD)": "", "탄소강(CC)": "", "탄소강(R/B)": "", "탄소강(Slab)": "",
-                                           "합금강(IC)": "", "합금강(VSD)": "", "합금강(CC)": "", "합금강(R/B)": "", "합금강(Slab)": "",
-                                           "SUS(IC)": "", "SUS(R/B)": "", "SUS(Slab)": "",
-                                           "공구강(IC)": "", "공구강(Slab)": ""})
+                    final_data.append({"설비": "", "제품형상": "", "구분": "", "탄소강(IC)": "", "탄소강(VSD)": "", "탄소강(CC)": "", "탄소강(R/B)": "", "탄소강(Slab)": "",
+                                       "합금강(IC)": "", "합금강(VSD)": "", "합금강(CC)": "", "합금강(R/B)": "", "합금강(Slab)": "",
+                                       "SUS(IC)": "", "SUS(R/B)": "", "SUS(Slab)": "",
+                                       "공구강(IC)": "", "공구강(Slab)": ""})
                 
                 # 최종 총합계 행 추가
                 final_data.append({
@@ -269,14 +279,24 @@ if uploaded_file:
                 # --- 5. Excel 다운로드 기능 ---
                 
                 # CSV/Excel 다운로드 버튼
-                csv = df_result.to_csv(index=False).encode('utf-8')
+                
+                # Excel (xlsx) 다운로드 기능을 Streamlit의 to_excel을 사용하여 추가
+                @st.cache_data
+                def convert_df_to_xlsx(df):
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df.to_excel(writer, index=False, sheet_name='CBAM_단조공장')
+                    return output.getvalue()
+
+                xlsx_data = convert_df_to_xlsx(df_result)
+                
                 st.download_button(
-                    label="⬇️ CSV 파일로 다운로드 (Excel 호환)",
-                    data=csv,
-                    file_name='CBAM_단조공장_보고서.csv',
-                    mime='text/csv',
-                    key='download-csv'
+                    label="⬇️ Excel 파일로 다운로드 (.xlsx)",
+                    data=xlsx_data,
+                    file_name='CBAM_단조공장_보고서.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
+
                 
             else:
                 st.error("데이터 집계에 실패했습니다. 파일 형식을 확인해 주세요.")
