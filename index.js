@@ -363,6 +363,15 @@ const App = () => {
         let p15CalculatedTotal = 0; // P15 기계의 총합을 별도로 계산
         const p15TargetMachine = 'P15';
 
+        // 재질별 총합을 저장할 객체 초기화 (총합계 행에 사용)
+        const grandTotals = {
+            'carbon': { ic: 0, vsd: 0, cc: 0, rb: 0, slab: 0 },
+            'alloy': { ic: 0, vsd: 0, cc: 0, rb: 0, slab: 0 },
+            'sus': { ic: 0, rb: 0, slab: 0 },
+            'tool': { ic: 0, slab: 0 },
+        };
+
+
         machines.forEach(machine => {
             const shapesData = processedData[machine];
             if (!shapesData) return;
@@ -393,6 +402,25 @@ const App = () => {
                         p15CalculatedTotal += rowCarbonTotal + rowAlloyTotal + rowSusTotal + rowToolTotal;
                     }
                     
+                    // Grand Totals 업데이트
+                    grandTotals.carbon.ic += row.carbon_ingot_ic;
+                    grandTotals.carbon.vsd += row.carbon_ingot_vsd;
+                    grandTotals.carbon.cc += row.carbon_ingot_cc;
+                    grandTotals.carbon.rb += row.carbon_rb;
+                    grandTotals.carbon.slab += row.carbon_slab;
+                    grandTotals.alloy.ic += row.alloy_ingot_ic;
+                    grandTotals.alloy.vsd += row.alloy_ingot_vsd;
+                    grandTotals.alloy.cc += row.alloy_ingot_cc;
+                    grandTotals.alloy.rb += row.alloy_rb;
+                    grandTotals.alloy.slab += row.alloy_slab;
+                    grandTotals.sus.ic += row.sus_ingot_ic;
+                    grandTotals.sus.rb += row.sus_rb;
+                    grandTotals.sus.slab += row.sus_slab;
+                    grandTotals.tool.ic += row.tool_ingot_ic;
+                    grandTotals.tool.slab += row.tool_slab;
+
+
+                    
                      markdown += `| ${machineCell} | ${shape} | **생산중량** | ${fmt(row.carbon_ingot_ic)} | ${fmt(row.carbon_ingot_vsd)} | ${fmt(row.carbon_ingot_cc)} | ${fmt(row.carbon_rb)} | ${fmt(row.carbon_slab)} | ${fmt(row.alloy_ingot_ic)} | ${fmt(row.alloy_ingot_vsd)} | ${fmt(row.alloy_ingot_cc)} | ${fmt(row.alloy_rb)} | ${fmt(row.alloy_slab)} | ${fmt(row.sus_ingot_ic)} | ${fmt(row.sus_rb)} | ${fmt(row.sus_slab)} | ${fmt(row.tool_ingot_ic)} | ${fmt(row.tool_slab)} |\n`;
                 } else {
                      markdown += `| ${machineCell} | ${shape} | 생산중량 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - |\n`;
@@ -413,8 +441,12 @@ const App = () => {
         markdown += `\n**[진단 결과] P15 기계의 총 계산 중량: ${p15CalculatedTotal.toLocaleString('ko-KR')} Kg**\n`;
         // ---------------------------------
         
-        // 총합계 행 추가
-        markdown += `| **총합계** | | | **${fmt(totalCarbon)}** | | | | | **${fmt(totalAlloy)}** | | | | | **${fmt(totalSus)}** | | | **${fmt(totalTool)}** | |`;
+        // 총합계 행 추가 (재질별 세부 합계 포함)
+        markdown += "| **총합계** | | | ";
+        markdown += `**${fmt(grandTotals.carbon.ic)}** | **${fmt(grandTotals.carbon.vsd)}** | **${fmt(grandTotals.carbon.cc)}** | **${fmt(grandTotals.carbon.rb)}** | **${fmt(grandTotals.carbon.slab)}** | `;
+        markdown += `**${fmt(grandTotals.alloy.ic)}** | **${fmt(grandTotals.alloy.vsd)}** | **${fmt(grandTotals.alloy.cc)}** | **${fmt(grandTotals.alloy.rb)}** | **${fmt(grandTotals.alloy.slab)}** | `;
+        markdown += `**${fmt(grandTotals.sus.ic)}** | **${fmt(grandTotals.sus.rb)}** | **${fmt(grandTotals.sus.slab)}** | `;
+        markdown += `**${fmt(grandTotals.tool.ic)}** | **${fmt(grandTotals.tool.slab)}** |\n`;
 
         return markdown;
     };
